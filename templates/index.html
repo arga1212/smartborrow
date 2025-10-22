@@ -1,0 +1,11 @@
+{% extends 'base.html' %}
+{% block title %}Asistio - Peminjaman Sekolah Jadi Cerdas{% endblock %}
+{% block content %}
+<div class="hero-section text-center">
+    <h1 class="display-3">Pinjam Barang & Ruangan Sekolah Jadi <span class="highlight">Lebih Mudah</span></h1>
+    <p class="lead col-md-8 mx-auto mt-4">Cukup ceritakan kegiatanmu ke AI Asisten, kami akan merekomendasikan semua barang yang kamu perlukan. Tanpa ribet, tanpa lupa.</p>
+    <div class="mt-5">
+        <a href="{{ url_for('pinjam') }}" class="btn btn-primary btn-lg">Mulai Peminjaman</a>
+    </div>
+</div>
+{% endblock %} 

@@ -1,0 +1,98 @@
+{% extends 'base.html' %}
+{% block title %}Peminjaman Manual - Asistio{% endblock %}
+{% block content %}
+<div class="row justify-content-center"><div class="col-lg-10">
+<div class="card p-4"><div class="card-body">
+    <h2 class="card-title text-center mb-4">Formulir Peminjaman Manual</h2>
+    <form id="manual-form">
+        <div class="mb-3"><label for="namaAcara" class="form-label fs-5">Nama Acara</label><input type="text" class="form-control" id="namaAcara" required></div>
+        <div class="mb-3"><label for="tanggalPinjam" class="form-label fs-5">Tanggal Pelaksanaan</label><input type="date" class="form-control" id="tanggalPinjam" required></div>
+        <hr>
+        <div class="mb-4">
+            <h4 class="mb-3">Pilih Ruangan (Opsional)</h4>
+            <select class="form-select" id="pilihRuangan">
+                <option value="">-- Tidak meminjam ruangan --</option>
+                {% for ruangan in list_ruangan %}
+                <option value="{{ ruangan.id }}">{{ ruangan.nama_ruangan }}</option>
+                {% endfor %}
+            </select>
+        </div>
+        <div class="mb-4">
+            <h4 class="mb-3">Pilih Barang (Opsional)</h4>
+            {% if list_barang %}
+            <ul class="list-group" id="barang-list">
+            {% for barang in list_barang %}
+                <li class="list-group-item">
+                    <div class="form-check d-flex justify-content-between align-items-center">
+                        <div>
+                            <input class="form-check-input me-2" type="checkbox" value="{{ barang.id }}" id="barang-{{ barang.id }}">
+                            <label class="form-check-label" for="barang-{{ barang.id }}">{{ barang.nama_barang }}</label>
+                        </div>
+                        <div class="d-none">
+                            <label for="jumlah-{{ barang.id }}" class="form-label me-2">Jumlah:</label>
+                            <input type="number" class="form-control-sm" id="jumlah-{{ barang.id }}" value="1" min="1" style="width: 70px;">
+                        </div>
+                    </div>
+                </li>
+            {% endfor %}
+            </ul>
+            {% else %}
+            <p class="text-muted">Tidak ada barang yang tersedia di inventaris.</p>
+            {% endif %}
+        </div>
+        <div class="d-grid">
+            <button type="submit" class="btn btn-success btn-lg">Ajukan Peminjaman</button>
+        </div>
+    </form>
+</div></div></div></div>
+{% endblock %}
+{% block scripts %}
+<script>
+document.addEventListener('DOMContentLoaded', function() {
+    // Tampilkan input jumlah jika checkbox dicentang
+    document.querySelectorAll('#barang-list .form-check-input').forEach(checkbox => {
+        checkbox.addEventListener('change', function() {
+            const quantityDiv = this.closest('.form-check').querySelector('div.d-none');
+            quantityDiv.classList.toggle('d-none', !this.checked);
+            quantityDiv.classList.toggle('d-flex', this.checked);
+            quantityDiv.classList.toggle('align-items-center', this.checked);
+        });
+    });
+
+    document.getElementById('manual-form').addEventListener('submit', async function(e) {
+        e.preventDefault();
+        const items = [];
+        document.querySelectorAll('#barang-list .form-check-input:checked').forEach(cb => {
+            items.push({
+                id: parseInt(cb.value),
+                jumlah: parseInt(document.getElementById(`jumlah-${cb.value}`).value)
+            });
+        });
+
+        const peminjamanData = {
+            nama_acara: document.getElementById('namaAcara').value,
+            tanggal_pinjam: document.getElementById('tanggalPinjam').value,
+            ruangan_id: document.getElementById('pilihRuangan').value || null,
+            items: items
+        };
+
+        if (!peminjamanData.ruangan_id && items.length === 0) {
+            alert('Anda harus memilih minimal satu ruangan atau satu barang.');
+            return;
+        }
+
+        try {
+            const response = await fetch("{{ url_for('ajukan_peminjaman') }}", {
+                method: 'POST',
+                headers: { 'Content-Type': 'application/json' },
+                body: JSON.stringify(peminjamanData)
+            });
+            const result = await response.json();
+            if (result.success) {
+                window.location.href = result.redirect_url;
+            } else { alert('Gagal: ' + result.message); }
+        } catch (error) { alert('Terjadi kesalahan.'); }
+    });
+});
+</script>
+{% endblock %}

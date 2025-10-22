@@ -1,4 +1,4 @@
-# 📦 SmartBorrow Prototype
+📦 SmartBorrow Prototype
 
 SmartBorrow adalah aplikasi prototipe berbasis **Streamlit + SQLAlchemy + Gemini AI** untuk mengelola peminjaman barang & ruangan dengan bantuan asisten AI.
 
@@ -17,7 +17,7 @@ SmartBorrow adalah aplikasi prototipe berbasis **Streamlit + SQLAlchemy + Gemini
    git clone https://github.com/arga1212/smartborrow.git
    cd smartborrow
 
-2. Buat virtual environment**
+2. Buat virtual environment
 
    bash
    python -m venv .venv

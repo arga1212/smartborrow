@@ -1,0 +1,43 @@
+{% extends 'base.html' %}
+{% block title %}Manajemen Inventaris - Asistio{% endblock %}
+{% block content %}
+<div class="d-flex justify-content-between align-items-center mb-4">
+    <h1>Manajemen Inventaris</h1>
+    <button class="btn btn-primary" data-bs-toggle="modal" data-bs-target="#tambahBarangModal"><i class="bi bi-plus-circle-fill me-2"></i>Tambah Barang Baru</button>
+</div>
+<div class="card"><div class="card-body">
+<table class="table table-striped">
+<thead><tr><th>ID</th><th>Nama Barang</th><th>Jumlah</th><th>Deskripsi</th><th>Aksi</th></tr></thead>
+<tbody>
+{% for barang in list_barang %}
+<tr>
+    <td>{{ barang.id }}</td><td>{{ barang.nama_barang }}</td><td>{{ barang.jumlah_total }}</td><td>{{ barang.deskripsi }}</td>
+    <td>
+        <button class="btn btn-warning btn-sm" data-bs-toggle="modal" data-bs-target="#editBarangModal-{{ barang.id }}">Edit</button>
+        <form action="{{ url_for('hapus_inventaris', id=barang.id) }}" method="POST" class="d-inline" onsubmit="return confirm('Yakin ingin menghapus?');"><button type="submit" class="btn btn-danger btn-sm">Hapus</button></form>
+    </td>
+</tr>
+<div class="modal fade" id="editBarangModal-{{ barang.id }}"><div class="modal-dialog"><div class="modal-content">
+<form action="{{ url_for('edit_inventaris', id=barang.id) }}" method="POST">
+    <div class="modal-header"><h5 class="modal-title">Edit Barang</h5><button type="button" class="btn-close" data-bs-dismiss="modal"></button></div>
+    <div class="modal-body">
+        <div class="mb-3"><label class="form-label">Nama Barang</label><input type="text" name="nama_barang" class="form-control" value="{{ barang.nama_barang }}" required></div>
+        <div class="mb-3"><label class="form-label">Jumlah</label><input type="number" name="jumlah" class="form-control" value="{{ barang.jumlah_total }}" required></div>
+        <div class="mb-3"><label class="form-label">Deskripsi</label><textarea name="deskripsi" class="form-control">{{ barang.deskripsi }}</textarea></div>
+    </div>
+    <div class="modal-footer"><button type="button" class="btn btn-secondary" data-bs-dismiss="modal">Batal</button><button type="submit" class="btn btn-primary">Simpan</button></div>
+</form></div></div></div>
+{% endfor %}
+</tbody></table>
+</div></div>
+<div class="modal fade" id="tambahBarangModal"><div class="modal-dialog"><div class="modal-content">
+<form action="{{ url_for('inventaris') }}" method="POST">
+    <div class="modal-header"><h5 class="modal-title">Tambah Barang Baru</h5><button type="button" class="btn-close" data-bs-dismiss="modal"></button></div>
+    <div class="modal-body">
+        <div class="mb-3"><label class="form-label">Nama Barang</label><input type="text" name="nama_barang" class="form-control" required></div>
+        <div class="mb-3"><label class="form-label">Jumlah</label><input type="number" name="jumlah" class="form-control" required></div>
+        <div class="mb-3"><label class="form-label">Deskripsi</label><textarea name="deskripsi" class="form-control" placeholder="(Opsional)"></textarea></div>
+    </div>
+    <div class="modal-footer"><button type="button" class="btn btn-secondary" data-bs-dismiss="modal">Batal</button><button type="submit" class="btn btn-primary">Tambah</button></div>
+</form></div></div></div>
+{% endblock %}

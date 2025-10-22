@@ -1,0 +1,129 @@
+{% extends 'base.html' %}
+{% block title %}Buat Peminjaman - Asistio{% endblock %}
+{% block content %}
+<div class="row justify-content-center"><div class="col-lg-10">
+<div class="card p-4"><div class="card-body">
+    <h2 class="card-title text-center mb-4">Formulir Peminjaman Cerdas</h2>
+    <div id="step1">
+        <div class="mb-3"><label for="namaAcara" class="form-label fs-5">Nama Acara</label><input type="text" class="form-control" id="namaAcara" placeholder="Contoh: Lomba 17 Agustus"></div>
+        <div class="mb-3"><label for="tanggalPinjam" class="form-label fs-5">Tanggal Pelaksanaan</label><input type="date" class="form-control" id="tanggalPinjam"></div>
+        <div class="mb-3"><label for="deskripsiAcara" class="form-label fs-5">Ceritakan Kebutuhan Acaramu</label><textarea class="form-control" id="deskripsiAcara" rows="4" placeholder="Contoh: Saya akan mengadakan acara podcast di dalam ruangan yang kedap suara, butuh 2 mic, meja, kursi dan lighting."></textarea></div>
+        <div class="d-grid"><button id="getRecommendationBtn" class="btn btn-primary btn-lg">Dapatkan Rekomendasi AI</button></div>
+    </div>
+    <div id="step2" class="d-none">
+        <div id="ai-recommendation-section" class="mb-4">
+            <h4 class="text-center"><i class="bi bi-robot me-2"></i>Rekomendasi dari AI Asisten</h4>
+            <div id="loader" class="text-center my-4 d-none"><div class="spinner-border" role="status"></div><p class="mt-2">AI sedang berpikir...</p></div>
+            
+            <!-- TEMPAT UNTUK MENAMPILKAN RUANGAN -->
+            <div id="recommended-room-container" class="mb-3 d-none">
+                <h5><i class="bi bi-door-open-fill me-2"></i>Rekomendasi Ruangan</h5>
+                <input type="text" id="recommended-room" class="form-control" disabled readonly>
+            </div>
+            
+            <!-- TEMPAT UNTUK MENAMPILKAN BARANG -->
+            <div id="recommendation-result"></div>
+        </div>
+        <div class="d-flex justify-content-between">
+            <button id="backToStep1" class="btn btn-secondary">Kembali</button>
+            <button id="submitPeminjaman" class="btn btn-success btn-lg">Ajukan Peminjaman</button>
+        </div>
+    </div>
+</div></div></div></div>
+{% endblock %}
+{% block scripts %}
+<script>
+document.addEventListener('DOMContentLoaded', function() {
+    // Simpan data ruangan dari Flask ke dalam variabel JavaScript
+    const ruanganData = [
+        {% for ruangan in semua_ruangan %}
+            { id: {{ ruangan.id }}, nama: "{{ ruangan.nama_ruangan }}" },
+        {% endfor %}
+    ];
+
+    const step1 = document.getElementById('step1'), step2 = document.getElementById('step2'), getRecommendationBtn = document.getElementById('getRecommendationBtn');
+    const backToStep1 = document.getElementById('backToStep1'), loader = document.getElementById('loader'), recommendationResult = document.getElementById('recommendation-result');
+    const submitPeminjaman = document.getElementById('submitPeminjaman'), namaAcaraEl = document.getElementById('namaAcara'), tanggalPinjamEl = document.getElementById('tanggalPinjam');
+    const roomContainer = document.getElementById('recommended-room-container');
+    const roomInput = document.getElementById('recommended-room');
+
+    getRecommendationBtn.addEventListener('click', async () => {
+        const deskripsi = document.getElementById('deskripsiAcara').value;
+        if (!deskripsi.trim() || !namaAcaraEl.value.trim() || !tanggalPinjamEl.value) { alert('Nama acara, tanggal, dan deskripsi tidak boleh kosong!'); return; }
+        step1.classList.add('d-none'); step2.classList.remove('d-none'); loader.classList.remove('d-none'); recommendationResult.innerHTML = ''; roomContainer.classList.add('d-none');
+
+        try {
+            const response = await fetch('/api/rekomendasi-ai', { method: 'POST', headers: { 'Content-Type': 'application/json' }, body: JSON.stringify({ deskripsi: deskripsi }) });
+            const data = await response.json();
+            loader.classList.add('d-none');
+
+            if (data.error) {
+                recommendationResult.innerHTML = `<div class="alert alert-danger">${data.error}</div>`;
+                return;
+            }
+            
+            // LOGIKA BARU UNTUK MENAMPILKAN RUANGAN DAN BARANG
+            // 1. Tampilkan Ruangan
+            if (data.ruangan) {
+                roomInput.value = data.ruangan;
+                roomContainer.classList.remove('d-none');
+            }
+
+            // 2. Tampilkan Barang
+            if (data.barang && data.barang.length > 0) {
+                let html = '<h5><i class="bi bi-box-seam-fill me-2"></i>Rekomendasi Barang</h5><ul class="list-group">';
+                data.barang.forEach(item => {
+                    const itemName = item.nama || 'Nama tidak diketahui';
+                    const itemJumlah = item.jumlah || 1;
+                    html += `<li class="list-group-item d-flex justify-content-between align-items-center" data-item-name="${itemName}">${itemName}<div><input type="number" class="form-control-sm" value="${itemJumlah}" min="1" style="width: 70px;"><button class="btn btn-danger btn-sm ms-2 remove-item-btn"><i class="bi bi-trash"></i></button></div></li>`;
+                });
+                html += '</ul>';
+                recommendationResult.innerHTML = html;
+            } else {
+                 recommendationResult.innerHTML = `<p class="text-muted">Tidak ada barang yang direkomendasikan untuk acara ini.</p>`;
+            }
+
+        } catch (error) { 
+            loader.classList.add('d-none'); 
+            recommendationResult.innerHTML = `<div class="alert alert-danger">Terjadi kesalahan saat memproses respons AI. Coba lagi.</div>`; 
+        }
+    });
+    
+    backToStep1.addEventListener('click', () => { step2.classList.add('d-none'); step1.classList.remove('d-none'); });
+    recommendationResult.addEventListener('click', e => { if (e.target.closest('.remove-item-btn')) e.target.closest('li').remove(); });
+    
+    submitPeminjaman.addEventListener('click', async () => {
+        const items = Array.from(document.querySelectorAll('#recommendation-result li')).map(li => ({ nama: li.dataset.itemName, jumlah: parseInt(li.querySelector('input').value) }));
+        
+        // LOGIKA BARU UNTUK MENDAPATKAN ID RUANGAN
+        let ruanganId = null;
+        if (!roomContainer.classList.contains('d-none')) {
+            const recommendedRoomName = roomInput.value;
+            const foundRoom = ruanganData.find(r => r.nama === recommendedRoomName);
+            if (foundRoom) {
+                ruanganId = foundRoom.id;
+            }
+        }
+        
+        if (!ruanganId && items.length === 0) {
+            alert('Tidak ada yang bisa diajukan.'); return;
+        }
+
+        const peminjamanData = {
+            nama_acara: namaAcaraEl.value,
+            tanggal_pinjam: tanggalPinjamEl.value,
+            ruangan_id: ruanganId,
+            items: items
+        };
+
+        try {
+            const response = await fetch("{{ url_for('ajukan_peminjaman') }}", { method: 'POST', headers: { 'Content-Type': 'application/json' }, body: JSON.stringify(peminjamanData) });
+            const result = await response.json();
+            if (result.success) {
+                window.location.href = result.redirect_url;
+            } else { alert('Gagal: ' + result.message); }
+        } catch (error) { alert('Terjadi kesalahan.'); }
+    });
+});
+</script>
+{% endblock %}
